@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <Navbar v-if="authStore.isLoggedIn" />
+    <Navbar />
     <router-view />
   </div>
 </template>
@@ -13,7 +13,11 @@ import Navbar from './components/Navbar.vue'
 const authStore = useAuthStore()
 
 onMounted(() => {
-  authStore.loadFromStorage()
+  // 每次进入/刷新都向服务端校验会话，导航入口按当前使用者的最新权限重算；
+  // 令牌失效时由 401 拦截统一清理会话、切回未登录并说明原因
+  if (authStore.token) {
+    authStore.validateSession()
+  }
 })
 </script>
 

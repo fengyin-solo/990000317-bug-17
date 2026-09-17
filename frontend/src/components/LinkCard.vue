@@ -104,7 +104,7 @@ async function handleReadLater() {
     }
     await linksStore.fetchLinks(linksStore.currentPage)
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error(error.response?.data?.error || '操作失败')
   }
 }
 

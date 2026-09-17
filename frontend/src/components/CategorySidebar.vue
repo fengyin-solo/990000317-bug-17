@@ -110,7 +110,7 @@ async function saveCategory() {
     }
     categoryDialogVisible.value = false
   } catch (err) {
-    ElMessage.error('操作失败')
+    ElMessage.error(err.response?.data?.error || '操作失败')
   }
 }
 
@@ -123,7 +123,7 @@ async function handleDeleteCategory(category) {
     ElMessage.success('删除成功')
   } catch (err) {
     if (err !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(err.response?.data?.error || '删除失败')
     }
   }
 }

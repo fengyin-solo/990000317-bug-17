@@ -1,14 +1,14 @@
 const express = require('express');
 const multer = require('multer');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriteAccess } = require('../middleware/auth');
 const { parseBookmarks } = require('../utils/bookmark-parser');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-// All routes require authentication
-router.use(authMiddleware);
+// All routes require authentication; read-only accounts can only use GET
+router.use(authMiddleware, requireWriteAccess);
 
 // POST /api/import/bookmarks - Import Chrome bookmarks
 router.post('/bookmarks', upload.single('file'), (req, res) => {

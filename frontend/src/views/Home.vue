@@ -8,10 +8,18 @@
       <main class="content">
         <div class="content-header">
           <SearchBar />
-          <el-button type="primary" @click="showAddDialog">
-            <el-icon><Plus /></el-icon>
-            添加链接
-          </el-button>
+          <el-tooltip
+            :disabled="authStore.canWrite"
+            content="当前账号为只读权限，无法添加链接"
+            placement="top"
+          >
+            <span>
+              <el-button type="primary" :disabled="!authStore.canWrite" @click="showAddDialog">
+                <el-icon><Plus /></el-icon>
+                添加链接
+              </el-button>
+            </span>
+          </el-tooltip>
         </div>
 
         <div class="active-filters" v-if="linksStore.selectedCategory || linksStore.selectedTag || linksStore.searchQuery">
@@ -64,6 +72,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useLinksStore } from '../stores/links'
+import { useAuthStore } from '../stores/auth'
 import CategorySidebar from '../components/CategorySidebar.vue'
 import TagCloud from '../components/TagCloud.vue'
 import SearchBar from '../components/SearchBar.vue'
@@ -71,6 +80,7 @@ import LinkCard from '../components/LinkCard.vue'
 import LinkForm from '../components/LinkForm.vue'
 
 const linksStore = useLinksStore()
+const authStore = useAuthStore()
 
 const formVisible = ref(false)
 const editingLink = ref(null)
@@ -106,7 +116,7 @@ async function handleDelete(link) {
     ElMessage.success('删除成功')
   } catch (err) {
     if (err !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(err.response?.data?.error || '删除失败')
     }
   }
 }

@@ -5,6 +5,16 @@ const api = axios.create({
   timeout: 30000,
 })
 
+// 401 统一处理回调，由应用入口注册（避免在此处反向依赖 store/router 造成循环引用）
+let unauthorizedHandler = null
+
+export function setUnauthorizedHandler(handler) {
+  unauthorizedHandler = handler
+}
+
+// 登录/注册接口自身的 401（如密码错误）属于业务结果，不应当作会话失效处理
+const AUTH_RESULT_URLS = ['/auth/login', '/auth/register']
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
@@ -21,10 +31,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+    const url = error.config?.url || ''
+    const isAuthResult = AUTH_RESULT_URLS.some((p) => url.includes(p))
+    if (error.response?.status === 401 && !isAuthResult) {
+      if (unauthorizedHandler) {
+        unauthorizedHandler()
+      } else {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
@@ -34,6 +50,7 @@ api.interceptors.response.use(
 export const authApi = {
   login: (username, password) => api.post('/auth/login', { username, password }),
   register: (username, email, password) => api.post('/auth/register', { username, email, password }),
+  me: () => api.get('/auth/me'),
 }
 
 // Links API

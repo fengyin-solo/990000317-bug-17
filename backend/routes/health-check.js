@@ -1,12 +1,12 @@
 const express = require('express');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriteAccess } = require('../middleware/auth');
 const { checkUrl } = require('../utils/link-checker');
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authMiddleware);
+// All routes require authentication; read-only accounts can only use GET
+router.use(authMiddleware, requireWriteAccess);
 
 // POST /api/health-check/all - Check all links for the user
 router.post('/all', async (req, res) => {

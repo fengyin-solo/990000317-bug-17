@@ -9,6 +9,7 @@
 - **导入浏览器书签**: 上传 Chrome 书签 HTML 文件，解析并批量导入
 - **死链检测**: 检测所有保存链接的 HTTP 状态，展示失效链接
 - **用户认证**: 基于 JWT + bcrypt 的注册/登录系统
+- **权限控制**: 普通账号可读写自己的数据；只读账号（viewer）仅可查看、不能改动，导航与接口均按当前登录态与权限渲染/校验
 
 ## 技术栈
 
@@ -81,8 +82,8 @@ npm run dev
 
 ### 演示账号
 
-- 用户名: `demo`
-- 密码: `demo123`
+- 用户名: `demo` / 密码: `demo123`（普通账号，可读写）
+- 用户名: `viewer` / 密码: `viewer123`（只读账号，仅可查看，不能改动）
 
 ## 项目结构
 
@@ -126,6 +127,7 @@ link-collector/
 ### 认证
 - `POST /api/auth/register` - 用户注册
 - `POST /api/auth/login` - 用户登录
+- `GET /api/auth/me` - 校验当前令牌并返回最新用户信息（含权限角色）
 
 ### 链接
 - `GET /api/links` - 获取链接列表 (支持分页、分类、标签、搜索筛选)
@@ -151,7 +153,7 @@ link-collector/
 
 ## 数据库表结构
 
-- **users**: 用户表 (id, username, email, password, created_at)
+- **users**: 用户表 (id, username, email, password, role, created_at)，role 为 `user`（可读写）或 `viewer`（只读）
 - **categories**: 分类表 (id, user_id, name, color)
 - **links**: 链接表 (id, user_id, url, title, description, category_id, status, last_checked, created_at)
 - **link_tags**: 标签关联表 (id, link_id, tag)

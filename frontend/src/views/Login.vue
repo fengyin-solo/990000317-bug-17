@@ -38,17 +38,19 @@
       <div class="demo-hint">
         <el-divider>演示账号</el-divider>
         <p>用户名: <strong>demo</strong> / 密码: <strong>demo123</strong></p>
+        <p>只读账号: <strong>viewer</strong> / 密码: <strong>viewer123</strong>（仅可查看，不能改动）</p>
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -65,6 +67,17 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
+// 会话失效跳转过来时，说明被退出的原因
+watch(
+  () => route.query.reason,
+  (reason) => {
+    if (reason === 'expired') {
+      ElMessage.warning('登录状态已失效，请重新登录')
+    }
+  },
+  { immediate: true }
+)
+
 async function handleLogin() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
@@ -73,7 +86,8 @@ async function handleLogin() {
   try {
     await authStore.login(form.username, form.password)
     ElMessage.success('登录成功')
-    router.push('/')
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    router.push(redirect)
   } catch (err) {
     ElMessage.error(err.response?.data?.error || '登录失败')
   } finally {

@@ -1,11 +1,11 @@
 const express = require('express');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriteAccess } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authMiddleware);
+// All routes require authentication; read-only accounts can only use GET
+router.use(authMiddleware, requireWriteAccess);
 
 // GET /api/categories - Get user's categories with link counts
 router.get('/', (req, res) => {

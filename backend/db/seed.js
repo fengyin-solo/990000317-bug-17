@@ -1,8 +1,10 @@
 const bcrypt = require('bcryptjs');
 const { initDatabase, getDb } = require('./init');
+const { migrateDatabase } = require('./migrate');
 
 function seed() {
   initDatabase();
+  migrateDatabase();
   const db = getDb();
 
   // Check if data already exists
@@ -15,10 +17,14 @@ function seed() {
   // Create demo user
   const hashedPassword = bcrypt.hashSync('demo123', 10);
   const insertUser = db.prepare(
-    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)'
+    'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)'
   );
-  insertUser.run('demo', 'demo@example.com', hashedPassword);
+  insertUser.run('demo', 'demo@example.com', hashedPassword, 'user');
   const userId = 1;
+
+  // Create read-only demo user (只能查看，不能改动)
+  const viewerPassword = bcrypt.hashSync('viewer123', 10);
+  insertUser.run('viewer', 'viewer@example.com', viewerPassword, 'viewer');
 
   // Create categories
   const insertCategory = db.prepare(
@@ -226,6 +232,7 @@ function seed() {
 
   console.log('Seed data created successfully!');
   console.log('- 1 demo user (demo/demo123)');
+  console.log('- 1 read-only user (viewer/viewer123)');
   console.log(`- ${categories.length} categories`);
   console.log(`- ${links.length} links with tags`);
 }

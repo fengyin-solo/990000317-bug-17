@@ -210,12 +210,16 @@ async function handleStatusChange(link, command) {
       ElMessage.success('已从稍后阅读移除')
     } catch (err) {
       if (err !== 'cancel') {
-        ElMessage.error('操作失败')
+        ElMessage.error(err.response?.data?.error || '操作失败')
       }
     }
   } else {
-    await readLaterStore.updateReviewStatus(link.id, command)
-    ElMessage.success('状态已更新')
+    try {
+      await readLaterStore.updateReviewStatus(link.id, command)
+      ElMessage.success('状态已更新')
+    } catch (err) {
+      ElMessage.error(err.response?.data?.error || '操作失败')
+    }
   }
 }
 
@@ -246,7 +250,7 @@ async function saveSchedule() {
     scheduleDialogVisible.value = false
     ElMessage.success('计划已更新')
   } catch (error) {
-    ElMessage.error('保存失败')
+    ElMessage.error(error.response?.data?.error || '保存失败')
   }
 }
 

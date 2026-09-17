@@ -8,10 +8,18 @@
             返回
           </el-button>
           <h2>死链检测</h2>
-          <el-button type="primary" :loading="checking" @click="handleCheckAll">
-            <el-icon><Refresh /></el-icon>
-            检测所有链接
-          </el-button>
+          <el-tooltip
+            :disabled="authStore.canWrite"
+            content="当前账号为只读权限，无法执行检测"
+            placement="top"
+          >
+            <span>
+              <el-button type="primary" :loading="checking" :disabled="!authStore.canWrite" @click="handleCheckAll">
+                <el-icon><Refresh /></el-icon>
+                检测所有链接
+              </el-button>
+            </span>
+          </el-tooltip>
         </div>
       </template>
 
@@ -69,6 +77,9 @@
 import { ref, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { healthCheckApi, linksApi } from '../api'
+import { useAuthStore } from '../stores/auth'
+
+const authStore = useAuthStore()
 
 const checking = ref(false)
 const progress = ref(0)
@@ -99,7 +110,7 @@ async function handleCheckAll() {
     await fetchDeadLinks()
     ElMessage.success('检测完成')
   } catch (err) {
-    ElMessage.error('检测失败，请重试')
+    ElMessage.error(err.response?.data?.error || '检测失败，请重试')
   } finally {
     checking.value = false
   }
@@ -115,7 +126,7 @@ async function handleDelete(link) {
     ElMessage.success('删除成功')
   } catch (err) {
     if (err !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(err.response?.data?.error || '删除失败')
     }
   }
 }

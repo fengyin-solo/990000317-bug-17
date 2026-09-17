@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
@@ -30,7 +31,7 @@ const routes = [
     path: '/import',
     name: 'Import',
     component: Import,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresWrite: true },
   },
   {
     path: '/dead-links',
@@ -54,10 +55,19 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
+  // 防御：确保登录态已从本地恢复（正常流程在 main.js 中已完成）
+  if (!authStore.hydrated) {
+    authStore.loadFromStorage()
+  }
+
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-    next({ name: 'Login' })
+    next({ name: 'Login', query: { redirect: to.fullPath } })
   } else if (to.meta.guest && authStore.isLoggedIn) {
     next({ name: 'Home' })
+  } else if (to.meta.requiresWrite && !authStore.canWrite) {
+    // 权限不足时给出说明
+    ElMessage.warning('当前账号为只读权限，仅可查看内容，无法使用该功能')
+    next(from.name ? false : { name: 'Home' })
   } else {
     next()
   }
