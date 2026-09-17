@@ -7,6 +7,14 @@ function migrateDatabase() {
   const db = new Database(DB_PATH);
   
   try {
+    const usersInfo = db.pragma("table_info(users)");
+    const userColumns = usersInfo.map(col => col.name);
+
+    if (!userColumns.includes('role')) {
+      db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'owner'");
+      console.log('Added column: users.role');
+    }
+
     const tableInfo = db.pragma("table_info(links)");
     const columns = tableInfo.map(col => col.name);
     

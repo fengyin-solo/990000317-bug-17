@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriter } = require('../middleware/auth');
 const { checkUrl } = require('../utils/link-checker');
 
 const router = express.Router();
@@ -8,8 +8,8 @@ const router = express.Router();
 // All routes require authentication
 router.use(authMiddleware);
 
-// POST /api/health-check/all - Check all links for the user
-router.post('/all', async (req, res) => {
+// POST /api/health-check/all - Check all links for the user (updates status)
+router.post('/all', requireWriter, async (req, res) => {
   const userId = req.userId;
   const db = getDb();
 

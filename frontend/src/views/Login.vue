@@ -8,6 +8,15 @@
         </div>
       </template>
 
+      <el-alert
+        v-if="notice"
+        :title="notice"
+        type="warning"
+        show-icon
+        :closable="false"
+        style="margin-bottom: 16px"
+      />
+
       <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleLogin">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" size="large" />
@@ -45,12 +54,26 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+
+const queryReasons = {
+  expired: '登录状态已过期，请重新登录',
+  invalid: '登录凭证无效，请重新登录',
+  missing: '请先登录后再访问该页面',
+  cleared: '你已在其他标签页退出登录',
+}
+
+// Prefer a reason carried by the redirect query (survives hard navigation),
+// otherwise the one staged in the store. Resolved once when the page mounts.
+const notice = ref(
+  (route.query.reason && queryReasons[route.query.reason]) || authStore.consumeNotice()
+)
 
 const formRef = ref(null)
 const loading = ref(false)
@@ -73,7 +96,8 @@ async function handleLogin() {
   try {
     await authStore.login(form.username, form.password)
     ElMessage.success('登录成功')
-    router.push('/')
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    router.push(redirect)
   } catch (err) {
     ElMessage.error(err.response?.data?.error || '登录失败')
   } finally {
@@ -84,7 +108,7 @@ async function handleLogin() {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   display: flex;
   align-items: center;
   justify-content: center;

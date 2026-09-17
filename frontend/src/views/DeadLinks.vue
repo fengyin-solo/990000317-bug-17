@@ -8,12 +8,27 @@
             返回
           </el-button>
           <h2>死链检测</h2>
-          <el-button type="primary" :loading="checking" @click="handleCheckAll">
+          <el-tooltip v-if="authStore.isReadOnly" content="只读账号，不能执行检测（会更新链接状态）" placement="top">
+            <el-button type="primary" disabled>
+              <el-icon><Refresh /></el-icon>
+              检测所有链接
+            </el-button>
+          </el-tooltip>
+          <el-button v-else type="primary" :loading="checking" @click="handleCheckAll">
             <el-icon><Refresh /></el-icon>
             检测所有链接
           </el-button>
         </div>
       </template>
+
+      <el-alert
+        v-if="authStore.isReadOnly"
+        type="info"
+        show-icon
+        :closable="false"
+        title="只读模式：仅可查看失效链接，不能检测或删除。"
+        style="margin-bottom: 16px"
+      />
 
       <div v-if="checking" class="checking-progress">
         <el-icon class="is-loading" :size="24"><Loading /></el-icon>
@@ -52,7 +67,10 @@
           </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="{ row }">
-              <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+              <el-tooltip v-if="authStore.isReadOnly" content="只读账号，不能删除" placement="top">
+                <el-button type="danger" size="small" disabled>删除</el-button>
+              </el-tooltip>
+              <el-button v-else type="danger" size="small" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -69,7 +87,9 @@
 import { ref, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { healthCheckApi, linksApi } from '../api'
+import { useAuthStore } from '../stores/auth'
 
+const authStore = useAuthStore()
 const checking = ref(false)
 const progress = ref(0)
 const checkResult = ref(null)

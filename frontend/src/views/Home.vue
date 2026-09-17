@@ -6,9 +6,17 @@
         <TagCloud />
       </aside>
       <main class="content">
+        <el-alert
+          v-if="authStore.isReadOnly"
+          type="info"
+          show-icon
+          :closable="false"
+          title="只读模式：当前账号仅可查看链接，不能添加、编辑或删除。"
+          style="margin-bottom: 16px"
+        />
         <div class="content-header">
           <SearchBar />
-          <el-button type="primary" @click="showAddDialog">
+          <el-button v-if="!authStore.isReadOnly" type="primary" @click="showAddDialog">
             <el-icon><Plus /></el-icon>
             添加链接
           </el-button>
@@ -33,6 +41,7 @@
             v-for="link in linksStore.links"
             :key="link.id"
             :link="link"
+            :readonly="authStore.isReadOnly"
             @edit="handleEdit"
             @delete="handleDelete"
           />
@@ -64,6 +73,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useLinksStore } from '../stores/links'
+import { useAuthStore } from '../stores/auth'
 import CategorySidebar from '../components/CategorySidebar.vue'
 import TagCloud from '../components/TagCloud.vue'
 import SearchBar from '../components/SearchBar.vue'
@@ -71,6 +81,7 @@ import LinkCard from '../components/LinkCard.vue'
 import LinkForm from '../components/LinkForm.vue'
 
 const linksStore = useLinksStore()
+const authStore = useAuthStore()
 
 const formVisible = ref(false)
 const editingLink = ref(null)

@@ -4,7 +4,7 @@
       <template #header>
         <div class="sidebar-header">
           <h3>分类</h3>
-          <el-button text size="small" @click="showAddCategory">
+          <el-button v-if="!authStore.isReadOnly" text size="small" @click="showAddCategory">
             <el-icon><Plus /></el-icon>
           </el-button>
         </div>
@@ -30,7 +30,12 @@
           <span class="category-color" :style="{ backgroundColor: cat.color }"></span>
           <span class="category-name">{{ cat.name }}</span>
           <span class="category-count">{{ cat.link_count }}</span>
-          <el-dropdown trigger="click" @command="(cmd) => handleCategoryCommand(cmd, cat)" @click.stop>
+          <el-dropdown
+            v-if="!authStore.isReadOnly"
+            trigger="click"
+            @command="(cmd) => handleCategoryCommand(cmd, cat)"
+            @click.stop
+          >
             <el-button text size="small" class="category-more" @click.stop>
               <el-icon><MoreFilled /></el-icon>
             </el-button>
@@ -66,8 +71,10 @@
 import { ref, reactive } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useLinksStore } from '../stores/links'
+import { useAuthStore } from '../stores/auth'
 
 const linksStore = useLinksStore()
+const authStore = useAuthStore()
 
 const categoryDialogVisible = ref(false)
 const editingCategory = ref(null)

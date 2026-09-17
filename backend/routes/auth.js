@@ -2,9 +2,27 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getDb } = require('../db/init');
-const { JWT_SECRET } = require('../middleware/auth');
+const { JWT_SECRET, authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+  };
+}
+
+function issueToken(user) {
+  return jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+}
+
+// GET /api/auth/me - Current user based on token (used to re-validate on refresh)
+router.get('/me', authMiddleware, (req, res) => {
+  res.json({ user: publicUser(req.user) });
+});
 
 // POST /api/auth/register
 router.post('/register', (req, res) => {
@@ -27,18 +45,15 @@ router.post('/register', (req, res) => {
   }
 
   const hashedPassword = bcrypt.hashSync(password, 10);
-  const result = db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)').run(username, email, hashedPassword);
+  // Self-service registrations always get full ownership of their own data.
+  const result = db.prepare(
+    'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)'
+  ).run(username, email, hashedPassword, 'owner');
 
-  const token = jwt.sign({ userId: result.lastInsertRowid }, JWT_SECRET, { expiresIn: '7d' });
+  const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?').get(result.lastInsertRowid);
+  const token = issueToken(user);
 
-  res.json({
-    token,
-    user: {
-      id: result.lastInsertRowid,
-      username,
-      email,
-    },
-  });
+  res.json({ token, user: publicUser(user) });
 });
 
 // POST /api/auth/login
@@ -61,15 +76,11 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+  const token = issueToken(user);
 
   res.json({
     token,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-    },
+    user: publicUser(user),
   });
 });
 

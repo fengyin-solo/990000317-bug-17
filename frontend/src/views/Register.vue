@@ -118,7 +118,7 @@ async function handleRegister() {
 
 <style scoped>
 .register-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
   display: flex;
   align-items: center;
   justify-content: center;

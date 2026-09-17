@@ -6,17 +6,23 @@
           <a :href="link.url" target="_blank" rel="noopener noreferrer">{{ link.title }}</a>
         </h3>
         <div class="header-actions">
-          <el-tooltip :content="link.is_read_later ? '已加入稍后阅读' : '加入稍后阅读'" placement="top">
-            <el-button
-              text
-              circle
-              :class="{ 'read-later-active': link.is_read_later }"
-              @click.stop="handleReadLater"
-            >
-              <el-icon><Clock /></el-icon>
-            </el-button>
+          <el-tooltip
+            :content="readonlyTip || (link.is_read_later ? '已加入稍后阅读' : '加入稍后阅读')"
+            placement="top"
+          >
+            <span class="action-wrapper">
+              <el-button
+                text
+                circle
+                :disabled="readonly"
+                :class="{ 'read-later-active': link.is_read_later }"
+                @click.stop="handleReadLater"
+              >
+                <el-icon><Clock /></el-icon>
+              </el-button>
+            </span>
           </el-tooltip>
-          <el-dropdown trigger="click" @command="handleCommand">
+          <el-dropdown v-if="!readonly" trigger="click" @command="handleCommand">
             <el-button text circle>
               <el-icon><MoreFilled /></el-icon>
             </el-button>
@@ -29,6 +35,9 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          <el-tooltip v-else content="只读账号，不能修改" placement="top">
+            <el-icon class="readonly-lock"><Lock /></el-icon>
+          </el-tooltip>
         </div>
       </div>
 
@@ -79,10 +88,16 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['edit', 'delete', 'tag-click'])
 const linksStore = useLinksStore()
+
+const readonlyTip = computed(() => (props.readonly ? '只读账号，不能修改' : ''))
 
 const displayUrl = computed(() => {
   try {
@@ -153,6 +168,17 @@ function handleCommand(command) {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.action-wrapper {
+  display: inline-flex;
+}
+
+.readonly-lock {
+  color: #909399;
+  font-size: 16px;
+  margin-left: 4px;
+  cursor: help;
 }
 
 .read-later-active {

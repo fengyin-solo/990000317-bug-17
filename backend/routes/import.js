@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriter } = require('../middleware/auth');
 const { parseBookmarks } = require('../utils/bookmark-parser');
 
 const router = express.Router();
@@ -10,8 +10,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 // All routes require authentication
 router.use(authMiddleware);
 
-// POST /api/import/bookmarks - Import Chrome bookmarks
-router.post('/bookmarks', upload.single('file'), (req, res) => {
+// POST /api/import/bookmarks - Import Chrome bookmarks (writes user data)
+router.post('/bookmarks', requireWriter, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }

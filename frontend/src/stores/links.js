@@ -126,6 +126,21 @@ export const useLinksStore = defineStore('links', () => {
     fetchLinks(1)
   }
 
+  // Clear all cached data, e.g. on logout, so a different account logging
+  // in on the same tab can never see the previous user's links.
+  function reset() {
+    links.value = []
+    categories.value = []
+    tags.value = []
+    total.value = 0
+    currentPage.value = 1
+    totalPages.value = 1
+    loading.value = false
+    selectedCategory.value = null
+    selectedTag.value = null
+    searchQuery.value = ''
+  }
+
   return {
     links,
     categories,
@@ -150,5 +165,6 @@ export const useLinksStore = defineStore('links', () => {
     setTag,
     setSearch,
     clearFilters,
+    reset,
   }
 })

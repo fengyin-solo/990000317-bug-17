@@ -5,6 +5,15 @@
       <p class="page-subtitle">按计划回顾您收藏的链接</p>
     </div>
 
+    <el-alert
+      v-if="authStore.isReadOnly"
+      type="info"
+      show-icon
+      :closable="false"
+      title="只读模式：仅可查看稍后阅读清单，不能调整状态、设置计划或移除。"
+      style="margin-bottom: 16px"
+    />
+
     <div class="stats-cards">
       <div class="stat-card" :class="{ active: readLaterStore.filterStatus === 'all' }" @click="readLaterStore.setFilterStatus('all')">
         <div class="stat-icon all">
@@ -56,7 +65,10 @@
             {{ getStatusText(link.review_status) }}
           </div>
           <div class="card-actions">
-            <el-dropdown @command="(cmd) => handleStatusChange(link, cmd)" trigger="click">
+            <el-tooltip v-if="authStore.isReadOnly" content="只读账号，不能修改" placement="top">
+              <el-icon class="readonly-lock"><Lock /></el-icon>
+            </el-tooltip>
+            <el-dropdown v-else @command="(cmd) => handleStatusChange(link, cmd)" trigger="click">
               <el-button size="small" text>
                 <el-icon><MoreFilled /></el-icon>
               </el-button>
@@ -108,10 +120,12 @@
             <el-icon><Calendar /></el-icon>
             <span>未设置计划</span>
           </div>
-          <el-button size="small" text @click.stop="openScheduleDialog(link)">
-            <el-icon><Edit /></el-icon>
-            设置计划
-          </el-button>
+          <div v-if="!authStore.isReadOnly" class="review-date">
+            <el-button size="small" text @click.stop="openScheduleDialog(link)">
+              <el-icon><Edit /></el-icon>
+              设置计划
+            </el-button>
+          </div>
         </div>
       </div>
 
@@ -157,11 +171,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, Clock, CircleCheck, CircleClose, MoreFilled, Calendar, Edit } from '@element-plus/icons-vue'
+import { Document, Clock, CircleCheck, CircleClose, MoreFilled, Calendar, Edit, Lock } from '@element-plus/icons-vue'
 import { useReadLaterStore } from '../stores/readLater'
+import { useAuthStore } from '../stores/auth'
 import { linksApi } from '../api'
 
 const readLaterStore = useReadLaterStore()
+const authStore = useAuthStore()
 
 const scheduleDialogVisible = ref(false)
 const scheduleDate = ref(null)
@@ -476,6 +492,13 @@ function handlePageChange(page) {
   gap: 4px;
   font-size: 13px;
   color: #909399;
+}
+
+.readonly-lock {
+  color: #909399;
+  font-size: 16px;
+  cursor: help;
+  margin-right: 4px;
 }
 
 .pagination {

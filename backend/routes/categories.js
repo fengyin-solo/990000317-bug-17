@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriter } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/categories - Create a new category
-router.post('/', (req, res) => {
+router.post('/', requireWriter, (req, res) => {
   const { name, color } = req.body;
   const userId = req.userId;
 
@@ -41,7 +41,7 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/categories/:id - Update a category
-router.put('/:id', (req, res) => {
+router.put('/:id', requireWriter, (req, res) => {
   const { id } = req.params;
   const { name, color } = req.body;
   const userId = req.userId;
@@ -67,7 +67,7 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE /api/categories/:id - Delete a category
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireWriter, (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
 

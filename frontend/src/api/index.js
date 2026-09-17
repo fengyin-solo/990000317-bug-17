@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const api = axios.create({
   baseURL: '/api',
@@ -17,14 +18,29 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor for error handling
+// Response interceptor: keep the Pinia auth store in sync with the server's
+// view of the session, instead of only wiping localStorage and hard-redirecting.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+  async (error) => {
+    const status = error.response?.status
+    const code = error.response?.data?.code
+    const url = error.config?.url || ''
+    const isAuthCall = url.startsWith('/auth/')
+
+    if (status === 401 && !isAuthCall) {
+      // Dynamic import avoids a circular dependency (store -> api -> store)
+      const { useAuthStore } = await import('../stores/auth')
+      const authStore = useAuthStore()
+      const reasonMap = {
+        TOKEN_EXPIRED: 'expired',
+        TOKEN_INVALID: 'invalid',
+        USER_MISSING: 'user_missing',
+        NO_TOKEN: 'missing',
+      }
+      await authStore.forceLogout(reasonMap[code] || 'invalid')
+    } else if (status === 403) {
+      ElMessage.error(error.response?.data?.error || '权限不足，无法执行该操作')
     }
     return Promise.reject(error)
   }
@@ -34,6 +50,7 @@ api.interceptors.response.use(
 export const authApi = {
   login: (username, password) => api.post('/auth/login', { username, password }),
   register: (username, email, password) => api.post('/auth/register', { username, email, password }),
+  me: () => api.get('/auth/me'),
 }
 
 // Links API

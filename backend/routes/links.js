@@ -1,11 +1,19 @@
 const express = require('express');
 const { getDb } = require('../db/init');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireWriter } = require('../middleware/auth');
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+// Verify a category belongs to the given user (or is null).
+// Prevents assigning a link to another user's category.
+function categoryBelongsToUser(db, categoryId, userId) {
+  if (categoryId === null || categoryId === undefined) return true;
+  const category = db.prepare('SELECT id FROM categories WHERE id = ? AND user_id = ?').get(categoryId, userId);
+  return !!category;
+}
 
 // GET /api/links - List links with pagination, filtering, search
 router.get('/', (req, res) => {
@@ -70,7 +78,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/links - Create a new link
-router.post('/', (req, res) => {
+router.post('/', requireWriter, (req, res) => {
   const { url, title, description, category_id, tags, is_read_later, review_date } = req.body;
   const userId = req.userId;
 
@@ -79,6 +87,10 @@ router.post('/', (req, res) => {
   }
 
   const db = getDb();
+
+  if (!categoryBelongsToUser(db, category_id || null, userId)) {
+    return res.status(403).json({ error: '无权使用该分类' });
+  }
 
   const result = db.prepare(
     'INSERT INTO links (user_id, url, title, description, category_id, status, is_read_later, review_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -198,7 +210,7 @@ router.get('/read-later', (req, res) => {
 });
 
 // POST /api/links/:id/read-later - Add link to read later
-router.post('/:id/read-later', (req, res) => {
+router.post('/:id/read-later', requireWriter, (req, res) => {
   const { id } = req.params;
   const { review_date } = req.body;
   const userId = req.userId;
@@ -234,7 +246,7 @@ router.post('/:id/read-later', (req, res) => {
 });
 
 // DELETE /api/links/:id/read-later - Remove link from read later
-router.delete('/:id/read-later', (req, res) => {
+router.delete('/:id/read-later', requireWriter, (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
 
@@ -256,7 +268,7 @@ router.delete('/:id/read-later', (req, res) => {
 });
 
 // PUT /api/links/:id/review-status - Update review status
-router.put('/:id/review-status', (req, res) => {
+router.put('/:id/review-status', requireWriter, (req, res) => {
   const { id } = req.params;
   const { review_status } = req.body;
   const userId = req.userId;
@@ -297,7 +309,7 @@ router.put('/:id/review-status', (req, res) => {
 });
 
 // PUT /api/links/:id - Update a link
-router.put('/:id', (req, res) => {
+router.put('/:id', requireWriter, (req, res) => {
   const { id } = req.params;
   const { url, title, description, category_id, tags, is_read_later, review_date, review_status } = req.body;
   const userId = req.userId;
@@ -308,6 +320,11 @@ router.put('/:id', (req, res) => {
   const link = db.prepare('SELECT * FROM links WHERE id = ? AND user_id = ?').get(id, userId);
   if (!link) {
     return res.status(404).json({ error: 'Link not found' });
+  }
+
+  const nextCategoryId = category_id !== undefined ? (category_id || null) : link.category_id;
+  if (!categoryBelongsToUser(db, nextCategoryId, userId)) {
+    return res.status(403).json({ error: '无权使用该分类' });
   }
 
   // Update link
@@ -359,7 +376,7 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE /api/links/:id - Delete a link
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireWriter, (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
 
